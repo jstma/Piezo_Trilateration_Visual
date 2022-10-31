@@ -1,194 +1,233 @@
-float[] cornerX =  {0, 1000, 0, 1000};
-float[] cornerY =  {0, 0, 1000, 1000};
 
-float w = 1000;
-float h = 1000;
+int w = 1000;                  /* Spacing between piezos */
+int h = floor(sqrt(3)*w/2);;   /* Equilateral triangle */
+
+/* This speed affects the accuracy likely due to the size of the time step.
+ * The smaller this number the better the accuracy.  It's probably analogous
+ * to sampling rate.
+ */
+float soundSpeed = 30;
 
 float currentTime = 0;
 float measurementStart = currentTime;
-float soundSpeed = 3;
 float impactTime = 0;
 boolean measurementStarted = false;
 
 ArrayList<SoundCircle> circleList = new ArrayList<SoundCircle>();
 ArrayList<Piezo> piezoList = new ArrayList<Piezo>();
 
-
-void setup() {
-  size(1000, 1000);
-  background(255);
-  ellipseMode(RADIUS);
-
-  piezoList.add(new Piezo(0, 0));
-  piezoList.add(new Piezo(1000, 0));
-  piezoList.add(new Piezo(0, 1000));
-  piezoList.add(new Piezo(1000, 1000));
+public void settings()
+{
+	size(w, h);
 }
 
-void draw() {
-  currentTime++;
-  strokeWeight(1);
-  background(255);
+void setup()
+{
+	background(255);
+	ellipseMode(RADIUS);
 
-  for (int i = 0; i < 1000; i+=10) {
-    for (int j = 0; j < 1000; j+=10) {
-      fill(255);
-      stroke(225);
-      rect(i, j, 10, 10);
-    }
-  }
+	piezoList.add(new Piezo(0, 0));
+	piezoList.add(new Piezo(w, 0));
+	piezoList.add(new Piezo(w/2, h));
+}
 
-  for (int i = 0; i < circleList.size(); i++) {
-    circleList.get(i).drawSoundCircle();
-  }
+void showGrid()
+{
+	strokeWeight(1);
+	background(255);
 
-  showMeasurement();
+	for (int i = 0; i < w; i+=10) {
+		for (int j = 0; j < h; j+=10) {
+			fill(255);
+			stroke(225);
+			rect(i, j, 10, 10);
+		}
+	}
+}
 
-  for (int i = 0; i < piezoList.size(); i++) {
-    piezoList.get(i).drawPiezo();
-    for (int j = 0; j < circleList.size(); j++) {
-      if (!piezoList.get(i).collided) {
-        piezoList.get(i).collides(circleList.get(j));
-      }
-    }
-  }
+void draw()
+{
+	currentTime++;
 
-  text("d0 = " + piezoList.get(0).deltaZeroTime*soundSpeed, 10, 100);
-  text("d0 = " + piezoList.get(1).deltaZeroTime*soundSpeed, 810, 100);
-  text("d0 = " + piezoList.get(2).deltaZeroTime*soundSpeed, 10, 900);
-  text("d0 = " + piezoList.get(3).deltaZeroTime*soundSpeed, 810, 900);
+	showGrid();
 
-  text("Δt = " + piezoList.get(0).deltaTime, 10, 130);
-  text("Δt = " + piezoList.get(1).deltaTime, 810, 130);
-  text("Δt = " + piezoList.get(2).deltaTime, 10, 930);
-  text("Δt = " + piezoList.get(3).deltaTime, 810, 930);
+	showMeasurement();
 
-  text("Δd1 = " + floor(piezoList.get(0).deltaTime*soundSpeed), 10, 160);
-  text("Δd2 = " + floor(piezoList.get(1).deltaTime*soundSpeed), 810, 160);
-  text("Δd3 = " + floor(piezoList.get(2).deltaTime*soundSpeed), 10, 960);
-  text("Δd4 = " + floor(piezoList.get(3).deltaTime*soundSpeed), 810, 960);
+	for (int i = 0; i < piezoList.size(); i++) {
+		piezoList.get(i).drawPiezo();
+		for (int j = 0; j < circleList.size(); j++) {
+			if (!piezoList.get(i).collided) {
+				piezoList.get(i).collides(circleList.get(j));
+			}
+		}
+	}
+
+	text("d0 = " + piezoList.get(0).deltaZeroTime*soundSpeed, 10, 100);
+	text("d1 = " + piezoList.get(1).deltaZeroTime*soundSpeed, w-200, 100);
+	text("d2 = " + piezoList.get(2).deltaZeroTime*soundSpeed, w/2-200, h-100);
+
+	text("Δt = " + piezoList.get(0).deltaTime, 10, 130);
+	text("Δt = " + piezoList.get(1).deltaTime, w-200, 130);
+	text("Δt = " + piezoList.get(2).deltaTime, w/2-200, h-70);
+
+	text("Δd1 = " + floor(piezoList.get(0).deltaTime*soundSpeed), 10, 160);
+	text("Δd2 = " + floor(piezoList.get(1).deltaTime*soundSpeed), w-200, 160);
+	text("Δd3 = " + floor(piezoList.get(2).deltaTime*soundSpeed), w/2-200, h-40);
 }
 
 
-void mouseClicked() {
-  circleList.clear();
-  circleList.add(new SoundCircle(mouseX, mouseY));
+void mouseClicked()
+{
+	circleList.clear();
+	circleList.add(new SoundCircle(mouseX, mouseY));
 
-  for (int i = 0; i < piezoList.size(); i++) {
-    piezoList.get(i).reset();
-  }
+	for (int i = 0; i < piezoList.size(); i++) {
+		piezoList.get(i).reset();
+	}
 
-  measurementStarted = false;
-  impactTime = currentTime;
-  loop();
+	measurementStarted = false;
+	impactTime = currentTime;
+	loop();
 }
 
-void showMeasurement() {
-  float d1 = piezoList.get(0).deltaTime*soundSpeed;
-  float d2 = piezoList.get(1).deltaTime*soundSpeed;
-  float d3 = piezoList.get(2).deltaTime*soundSpeed;
-  float d4 = piezoList.get(3).deltaTime*soundSpeed;
-
-  float d01 = piezoList.get(0).deltaZeroTime*soundSpeed;
-  float d02 = piezoList.get(1).deltaZeroTime*soundSpeed;
-  float d03 = piezoList.get(2).deltaZeroTime*soundSpeed;
-  float d04 = piezoList.get(3).deltaZeroTime*soundSpeed;
-
-  //HYPERBEL MIT FOCII d1 und d2
-  float centerX1 = 500;
-  float centerY1 = 0;
-  float k1 =  (d1-d2);
-  float a1 = k1/2;
-  float c1 = w/2;
-  //println("1. Hyperbel: " + "((x-500)^2" + "/" + pow(a1, 2) + ")" + "-" + "(y^2)" + "/" + (pow(c1, 2) - pow(a1, 2)) + " = 1");
+void showMeasurement()
+{
+	boolean measurementComplete = true;
+	noLoop();
+	for (int i = 0; i < piezoList.size(); i++) {
+		if (!piezoList.get(i).collided) {
+			loop();
+			measurementComplete = false;
+		}
+	}
   
+	if(!measurementComplete) {
+		// draw expanding SoundCircle
+		for (int i = 0; i < circleList.size(); i++) {
+			circleList.get(i).drawSoundCircle();
+		}
+		return;
+	}
 
-  
+	showMouse();
 
-  //HYPERBEL MIT FOCII d1 und d3
-  float centerX2 = 0;
-  float centerY2 = 500;
-  float k2 =  (d1-d3);
-  float a2 = k2/2;
-  float c2 = w/2;
-  //println("2. Hyperbel: " + "((y+500)^2" + "/" + pow(a2, 2) + ")" + "-" + "(x^2)" + "/" + (pow(c2, 2) - pow(a2, 2)) + " = 1");
-  
+//	showRadii();
 
-  Pofloat floatersection = new Pofloat();
+	showPoint();
+}
 
-  Pofloat sectorStart = new Pofloat();
-  float sectorWidth = w/2;
-  float sectorHeight = h/2;
+void showMouse()
+{
+	float mouseX = circleList.get(0).xPos;
+	float mouseY = circleList.get(0).yPos;
+
+	/* Show the mouse location */
+	fill(255,255,0,125);
+	circle(mouseX, mouseY, 10);
+}
+
+void showRadii()
+{
+	/* show the radii */
+	fill(0,0,0,0);
+	strokeWeight(2);
+	stroke(0);
+	for (int i = 0; i < piezoList.size(); i++) {
+		float d = piezoList.get(i).deltaZeroTime*soundSpeed;
+		circle(piezoList.get(i).xPos, piezoList.get(i).yPos, d);
+	}
+}
+
+void showPoint()
+{
+	/* bunch o' math from here:
+	 * https://math.stackexchange.com/questions/3373011/how-to-solve-this-system-of-hyperbola-equations
+	 */
+
+	float dt0 = piezoList.get(0).deltaTime*soundSpeed;
+	float dt1 = piezoList.get(1).deltaTime*soundSpeed;
+	float dt2 = piezoList.get(2).deltaTime*soundSpeed;
+
+	float r1, r2;
+
+	float x0;
+	float y0;
+	float x1;
+	float y1;
+	float x2;
+	float y2;
+
+	/* one of these dt is going to be r=0 and it will be the one closest to
+	 * the point of impact.  We don't want to use that one.
+	 */
+
+	if(dt0 == 0) {
+		r1 = dt1;
+		r2 = dt2;
+
+		x0 = piezoList.get(0).xPos;
+		y0 = piezoList.get(0).yPos;
+		x1 = piezoList.get(1).xPos;
+		y1 = piezoList.get(1).yPos;
+		x2 = piezoList.get(2).xPos;
+		y2 = piezoList.get(2).yPos;
+	} else if (dt1 == 0) {
+		r1 = dt0;
+		r2 = dt2;
+
+		x0 = piezoList.get(1).xPos;
+		y0 = piezoList.get(1).yPos;
+		x1 = piezoList.get(0).xPos;
+		y1 = piezoList.get(0).yPos;
+		x2 = piezoList.get(2).xPos;
+		y2 = piezoList.get(2).yPos;
+	} else { /* dt2 == 0 */
+		r1 = dt0;
+		r2 = dt1;
+
+		x0 = piezoList.get(2).xPos;
+		y0 = piezoList.get(2).yPos;
+		x1 = piezoList.get(0).xPos;
+		y1 = piezoList.get(0).yPos;
+		x2 = piezoList.get(1).xPos;
+		y2 = piezoList.get(1).yPos;
+	}
+
+	float a1 = 2*(x0 - x1);
+	float b1 = 2*(y0 - y1);
+	float c1 = pow(r1, 2) + pow(x0, 2) + pow(y0, 2) - pow(x1, 2) - pow(y1, 2);
+
+	float a2 = 2*(x0 - x2);
+	float b2 = 2*(y0 - y2);
+	float c2 = pow(r2, 2) + pow(x0, 2) + pow(y0, 2) - pow(x2, 2) - pow(y2, 2);
+
+	float d1 = (2*r1*b2 - 2*r2*b1)/(a1*b2 - a2*b1);
+	float e1 = (c1*b2 - c2*b1)/(a1*b2 - a2*b1);
+	float d2 = (2*r1*a2 - 2*r2*a1)/(a2*b1 - a1*b2);
+	float e2 = (c1*a2 - c2*a1)/(a2*b1 - a1*b2);
+
+	float a = pow(d1, 2) + pow(d2, 2) - 1;
+	float b = 2*(e1 - x0)*d1 + 2*(e2 - y0)*d2;
+	float c = pow((e1 - x0), 2) + pow((e2 - y0), 2);
+
+	/* two solutions to the quadratic equation */
+	float r_1 = (-b + sqrt(pow(b, 2) - 4*a*c))/(2*a);
+	float r_2 = (-b - sqrt(pow(b, 2) - 4*a*c))/(2*a);
 
 
-  //SEKTOR BESTIMMUNG
-  if (d1 <= 5 && d2 <= 5 && d3 <= 5 && d4 <= 5) {
-    sectorStart.x = 480;
-    sectorStart.y = 480;
-    sectorWidth = 40;
-    sectorHeight = 40;
-  } else {
-    if (d1 == 0) {
-      sectorStart.x = 0;
-      sectorStart.y = 0;
-    } else if (d2 == 0) {
-      sectorStart.x = 500;
-      sectorStart.y = 0;
-    } else if (d3 == 0) {
-      sectorStart.x = 0;
-      sectorStart.y = 500;
-    } else if (d4 == 0) {
-      sectorStart.x = 500;
-      sectorStart.y = 500;
-    }
-  }
+	/* This solution is always wrong */
+/*
+	float x = d1*r_1 + e1;
+	float y = d2*r_1 + e2;
 
+	fill(0,0,255,125);
+	circle(x, y, 10);
+*/
 
+	/* This solution seems to always be correct */
+	float x = d1*r_2 + e1;
+	float y = d2*r_2 + e2;
 
-  strokeWeight(1);
-  stroke(1);
-  fill(200, 200, 255, 40);
-  rect(sectorStart.x, sectorStart.y, sectorWidth, sectorHeight);
-
-  boolean measurementComplete = true;
-  noLoop();
-  for (int i = 0; i < piezoList.size(); i++) {
-    if (!piezoList.get(i).collided) {
-      loop();
-      measurementComplete = false;
-    }
-  }
-  
-  if (measurementComplete) {
-    //outer: for (float y = sectorStart.y; y < sectorStart.y+sectorHeight; y+=1) {
-    //  for (float x = sectorStart.x; x < sectorStart.x+sectorWidth; x+=1) {
-    outer: for (float y = 0; y < h; y+=1) {
-      for (float x = 0; x < w; x+=1) {
-        strokeWeight(0);
-        
-        
-        float Px = x;
-        float Py = 0-y;
-        float equationResult1 = (pow((Px - 500),2)/pow(a1, 2)) - pow(Py,2)/(pow(c1, 2) - pow(a1, 2));
-        float equationResult2 = (pow( (Py + 500) ,2) /pow(a2, 2)) - pow(Px,2)/(pow(c2, 2) - pow(a2, 2));
-        
-        if(abs(equationResult1-1) < 0.1 || abs(equationResult2-1) < 0.1){
-          fill(255, 200, 200, 100);
-          rect(x, y, 1, 1);
-          if(abs(equationResult1-1) < 0.1 && abs(equationResult2-1) < 0.1){
-            //fill(255,0,0,255);
-            //circle(Px, -Py, 10);
-            //break outer;
-          }
-        } else {
-          fill(200, 255, 200, 100);
-        }
-        
-        
-        
-        
-        
-      }
-    }
-  }
+	fill(255,0,0,125);
+	circle(x, y, 10);
 }
